@@ -538,6 +538,7 @@ ENTRY_POINTS = {
         'lowpass_cheby_2 = obspy.signal.filter:lowpass_cheby_2',
         'lowpass_fir = obspy.signal.filter:lowpass_FIR',
         'remez_fir = obspy.signal.filter:remez_FIR',
+        'kg_dispersion = obspy.signal.filter:kg_dispersion',
         ],
     'obspy.plugin.interpolate': [
         'interpolate_1d = obspy.signal.interpolation:interpolate_1d',

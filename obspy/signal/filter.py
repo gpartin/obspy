@@ -448,3 +448,51 @@ def lowpass_cheby_2(data, freq, df, maxorder=12, ba=False,
     if freq_passband:
         return sosfilt(sos, data), wp * nyquist
     return sosfilt(sos, data)
+
+
+def kg_dispersion(data, chi, df, c=1.0, distance=1.0):
+    """
+    Apply a Klein-Gordon dispersive phase filter.
+
+    Applies a frequency-dependent phase shift to the data based on the
+    Klein-Gordon dispersion relation:
+
+        omega^2 = c^2 * k^2 + chi^2
+
+    For each frequency component omega, the propagation wave-vector is:
+
+        k(omega) = sqrt(omega^2 - chi^2) / c
+
+    Above the cutoff (omega >= chi) the signal is phase-shifted by
+    k * distance.  Below cutoff (omega < chi) the signal is exponentially
+    attenuated (evanescent regime).
+
+    This filter is useful for modelling dispersive wave propagation through
+    media with an effective mass gap, such as seismic surface waves or
+    acoustic modes with a low-frequency cutoff.
+
+    :type data: numpy.ndarray
+    :param data: Data to filter.
+    :param chi: Cutoff angular frequency (rad/s).  Frequencies below
+        ``chi / (2*pi)`` Hz are evanescent.
+    :param df: Sampling rate in Hz.
+    :param c: Wave speed in the medium (default 1.0, natural units).
+    :param distance: Propagation distance (default 1.0, natural units).
+    :return: Dispersed data (numpy.ndarray, same length as input).
+    """
+    n = len(data)
+    freqs = np.fft.rfftfreq(n, d=1.0 / df)
+    omega = 2.0 * np.pi * freqs
+
+    # Complex k: propagating (real) above cutoff, evanescent (imaginary) below
+    k_squared = (omega ** 2 - chi ** 2) / (c ** 2)
+    k = np.sqrt(k_squared.astype(complex))
+
+    # Phase shift = exp(i * k * distance)
+    H = np.exp(1j * k * distance)
+
+    # DC component: no phase shift
+    H[0] = 1.0
+
+    spectrum = np.fft.rfft(data)
+    return np.fft.irfft(spectrum * H, n=n)
